@@ -99,6 +99,12 @@
         .filter-tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); }
         .filter-tab { padding: 10px 15px; cursor: pointer; border-bottom: 3px solid transparent; }
         .filter-tab.active { border-bottom-color: var(--accent-color); color: var(--primary-color); font-weight: bold; }
+        
+        /* Ayah Styles */
+        .ayah { display: inline-block; margin-bottom: 15px; cursor: pointer; transition: all 0.2s; padding: 5px; border-radius: 5px; }
+        .ayah:hover { background-color: rgba(192, 160, 98, 0.1); }
+        .ayah.playing { background-color: rgba(192, 160, 98, 0.2); }
+        .ayah-number { color: var(--accent-color); font-size: 1.2rem; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -182,7 +188,8 @@
             selectedReciterId: 7, 
             surahsList: [], 
             tasbeehCount: 0,
-            activeAdhkarCategory: 'all'
+            activeAdhkarCategory: 'all',
+            currentPlayingAyah: null
         };
         const audioPlayer = new Audio();
         
@@ -211,7 +218,7 @@
                 { id: 3, title: "الحديث الثالث: أركان الإسلام", body: `عن أبي عبد الرحمن عبد الله بن عمر بن الخطاب رضي الله عنهما قال: سمعت رسول الله صلى الله عليه وسلم يقول: "بني الإسلام على خمس: شهادة أن لا إله إلا الله وأن محمدا رسول الله، وإقام الصلاة، وإيتاء الزكاة، وحج البيت، وصوم رمضان".` },
                 { id: 4, title: "الحديث الرابع: مراحل الخلق", body: `عن أبي عبد الرحمن عبد الله بن مسعود رضي الله عنه قال: حدثنا رسول الله صلى الله عليه وسلم وهو الصادق المصدوق: "إن أحدكم يجمع خلقه في بطن أمه أربعين يوما نطفة، ثم يكون علقة مثل ذلك، ثم يكون مضغة مثل ذلك، ثم يرسل إليه الملك فينفخ فيه الروح، ويؤمر بأربع كلمات: بكتب رزقه، وأجله، وعمله، وشقي أو سعيد، فوالذي لا إله غيره إن أحدكم ليعمل بعمل أهل الجنة حتى ما يكون بينه وبينها إلا ذراع فيسبق عليه الكتاب فيعمل بعمل أهل النار فيدخلها، وإن أحدكم ليعمل بعمل أهل النار حتى ما يكون بينه وبينها إلا ذراع فيسبق عليه الكتاب فيعمل بعمل أهل الجنة فيدخلها".` },
                 { id: 5, title: "الحديث الخامس: النهي عن البدع", body: `عن أم المؤمنين أم عبد الله عائشة رضي الله عنها قالت: قال رسول الله صلى الله عليه وسلم: "من أحدث في أمرنا هذا ما ليس منه فهو رد". وفي رواية لمسلم: "من عمل عملا ليس عليه أمرنا فهو رد".` },
-                { id: 6, title: "الحديث السادس: البعد عن الشبهات", body: `عن أبي عبد الله النعمان بن بشير رضي الله عنهما قال: سمعت رسول الله صلى الله عليه وسلم يقول: "إن الحلال بين، وإن الحرام بين، وبينهما أمور مشتبهات لا يعلمهن كثير من الناس، فمن اتقى الشبهات استبرأ لدينه وعرضه، ومن وقع في الشبهات وقع في الحرام، كالراعي يرعى حول الحمى يوشك أن يرتع فيه، ألا وإن لكل ملك حمى، ألا وإن حمى الله محارمه، ألا وإن في الجسد مضغة إذا صلحت صلح الجسد كله، وإذا فسدت فسد الجسد كله، ألا وهي القلب".` },
+                { id: 6, title: "الحديث السادس: البعد عن الشبهات", body: `عن أبي مسعود عقبة بن عمرو الأنصاري البدري رضي الله عنه قال: قال رسول الله صلى الله عليه وسلم: "إن الحلال بين، وإن الحرام بين، وبينهما أمور مشتبهات لا يعلمهن كثير من الناس، فمن اتقى الشبهات استبرأ لدينه وعرضه، ومن وقع في الشبهات وقع في الحرام، كالراعي يرعى حول الحمى يوشك أن يرتع فيه، ألا وإن لكل ملك حمى، ألا وإن حمى الله محارمه، ألا وإن في الجسد مضغة إذا صلحت صلح الجسد كله، وإذا فسدت فسد الجسد كله، ألا وهي القلب".` },
                 { id: 7, title: "الحديث السابع: النصيحة", body: `عن أبي رقية تميم بن أوس الداري رضي الله عنه أن النبي صلى الله عليه وسلم قال: "الدين النصيحة". قلنا: لمن؟ قال: "لله، ولكتابه، ولرسوله، ولأئمة المسلمين وعامتهم".` },
                 { id: 8, title: "الحديث الثامن: حرمة دم المسلم", body: `عن ابن عمر رضي الله عنهما أن رسول الله صلى الله عليه وسلم قال: "أمرت أن أقاتل الناس حتى يشهدوا أن لا إله إلا الله وأن محمدا رسول الله، ويقيموا الصلاة، ويؤتوا الزكاة، فإذا فعلوا ذلك عصموا مني دماءهم وأموالهم إلا بحق الإسلام، وحسابهم على الله".` },
                 { id: 9, title: "الحديث التاسع: النهي عن كثرة السؤال", body: `عن أبي هريرة عبد الرحمن بن صخر رضي الله عنه قال: سمعت رسول الله صلى الله عليه وسلم يقول: "ما نهيتكم عنه فاجتنبوه، وما أمرتكم به فأتوا منه ما استطعتم، فإنما أهلك الذين من قبلكم كثرة مسائلهم واختلافهم على أنبيائهم".` },
@@ -425,15 +432,77 @@
             async function updateSurahContent() {
                 if (!state.selectedReciterId) { $('#surah-content').innerHTML = "<p>الرجاء اختيار قارئ.</p>"; return; }
                 $('#surah-content').innerHTML = `<p style="text-align:center;">... جاري التحميل ...</p>`;
-                const [versesData, audioData] = await Promise.all([
-                    fetchAPI(`https://api.quran.com/api/v4/quran/verses/uthmani?chapter_number=${state.currentSurahNumber}`),
-                    fetchAPI(`https://api.quran.com/api/v4/chapter_recitations/${state.selectedReciterId}/${state.currentSurahNumber}`)
-                ]);
                 
-                if (!versesData || !audioData?.audio_file) { $('#surah-content').innerHTML = "<p>فشل تحميل السورة. قد لا تكون متاحة لهذا القارئ.</p>"; return; }
-                audioPlayer.src = audioData.audio_file.audio_url;
-                $('#play-pause-btn').textContent = '▶️';
-                $('#surah-content').innerHTML = versesData.verses.map(v => `<span class="ayah">${v.text_uthmani}<span class="ayah-number">﴿${v.verse_key.split(':')[1]}﴾</span></span>`).join('');
+                try {
+                    const [versesData, audioData] = await Promise.all([
+                        fetchAPI(`https://api.quran.com/api/v4/quran/verses/uthmani?chapter_number=${state.currentSurahNumber}`),
+                        fetchAPI(`https://api.quran.com/api/v4/chapter_recitations/${state.selectedReciterId}/${state.currentSurahNumber}`)
+                    ]);
+                    
+                    if (!versesData || !audioData?.audio_file) { 
+                        $('#surah-content').innerHTML = "<p>فشل تحميل السورة. قد لا تكون متاحة لهذا القارئ.</p>"; 
+                        return; 
+                    }
+                    
+                    // Store verses data for ayah playback
+                    state.currentSurahVerses = versesData.verses;
+                    state.currentSurahAudioUrl = audioData.audio_file.audio_url;
+                    
+                    // Update main audio player
+                    audioPlayer.src = state.currentSurahAudioUrl;
+                    $('#play-pause-btn').textContent = '▶️';
+                    
+                    // Render verses with click handlers
+                    $('#surah-content').innerHTML = state.currentSurahVerses.map((v, i) => `
+                        <div class="ayah" data-ayah-index="${i}">
+                            ${v.text_uthmani}<span class="ayah-number">﴿${v.verse_key.split(':')[1]}﴾</span>
+                        </div>
+                    `).join('');
+                    
+                    // Add click handlers for each ayah
+                    $$('.ayah').forEach(ayah => {
+                        ayah.addEventListener('click', function() {
+                            const ayahIndex = parseInt(this.dataset.ayahIndex);
+                            playAyah(ayahIndex);
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('Error loading surah content:', error);
+                    $('#surah-content').innerHTML = "<p>حدث خطأ أثناء تحميل السورة. يرجى المحاولة لاحقاً.</p>";
+                }
+            }
+            
+            // Function to play specific ayah
+            function playAyah(ayahIndex) {
+                if (!state.currentSurahVerses || !state.currentSurahAudioUrl) return;
+                
+                // Highlight the playing ayah
+                if (state.currentPlayingAyah !== null) {
+                    $$('.ayah')[state.currentPlayingAyah]?.classList.remove('playing');
+                }
+                $$('.ayah')[ayahIndex]?.classList.add('playing');
+                state.currentPlayingAyah = ayahIndex;
+                
+                // Create a new audio element for the ayah
+                const ayahAudio = new Audio(state.currentSurahAudioUrl);
+                
+                // Calculate start time (approximate - this is a simple estimation)
+                // Note: For precise timing, you would need a verses timings API
+                const startTime = ayahIndex * 3; // 3 seconds per ayah as estimation
+                
+                ayahAudio.currentTime = startTime;
+                ayahAudio.play();
+                
+                // When this ayah audio ends, remove highlight
+                ayahAudio.addEventListener('ended', () => {
+                    $$('.ayah')[ayahIndex]?.classList.remove('playing');
+                });
+                
+                // Also remove highlight if user clicks another ayah
+                ayahAudio.addEventListener('pause', () => {
+                    $$('.ayah')[ayahIndex]?.classList.remove('playing');
+                });
             }
 
             function updateReciterList() {
@@ -441,7 +510,9 @@
                 const filteredReciters = localData.reciters.filter(r => r.style === style);
                 reciterSelector.innerHTML = '';
                 if (filteredReciters.length > 0) {
-                    filteredReciters.forEach(reciter => { reciterSelector.innerHTML += `<option value="${reciter.id}">${reciter.name}</option>`; });
+                    filteredReciters.forEach(reciter => { 
+                        reciterSelector.innerHTML += `<option value="${reciter.id}">${reciter.name}</option>`; 
+                    });
                     state.selectedReciterId = filteredReciters[0].id;
                 } else {
                     reciterSelector.innerHTML = '<option>لا يوجد قراء</option>';
@@ -503,13 +574,27 @@
             $('#audio-controls').addEventListener('click', (e) => {
                 if(e.target.tagName !== 'BUTTON') return;
                 const targetId = e.target.id;
+                
                 if (targetId === 'play-pause-btn') {
                     if (!audioPlayer.src || !state.selectedReciterId) return;
-                    if (audioPlayer.paused) { audioPlayer.play(); e.target.textContent = '⏸️'; } 
-                    else { audioPlayer.pause(); e.target.textContent = '▶️'; }
+                    
+                    if (audioPlayer.paused) { 
+                        audioPlayer.play(); 
+                        e.target.textContent = '⏸️'; 
+                        
+                        // Remove any ayah highlights when playing full surah
+                        if (state.currentPlayingAyah !== null) {
+                            $$('.ayah')[state.currentPlayingAyah]?.classList.remove('playing');
+                            state.currentPlayingAyah = null;
+                        }
+                    } else { 
+                        audioPlayer.pause(); 
+                        e.target.textContent = '▶️'; 
+                    }
                 } else {
                     let direction = targetId === 'next-btn' ? 1 : -1;
                     let newSurah = state.currentSurahNumber + direction;
+                    
                     if (newSurah >= 1 && newSurah <= 114) {
                         state.currentSurahNumber = newSurah;
                         surahSelector.value = newSurah;
@@ -517,7 +602,18 @@
                     }
                 }
             });
-            audioPlayer.addEventListener('ended', () => $('#play-pause-btn').textContent = '▶️');
+            
+            audioPlayer.addEventListener('ended', () => {
+                $('#play-pause-btn').textContent = '▶️';
+            });
+            
+            audioPlayer.addEventListener('play', () => {
+                // When full surah plays, ensure no ayah is highlighted
+                if (state.currentPlayingAyah !== null) {
+                    $$('.ayah')[state.currentPlayingAyah]?.classList.remove('playing');
+                    state.currentPlayingAyah = null;
+                }
+            });
         }
 
         async function initializeHomeTab() {
