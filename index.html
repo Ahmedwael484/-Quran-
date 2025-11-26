@@ -289,12 +289,11 @@
     </div>
 
     <script type="text/worker" id="service-worker-code">
-        const CACHE_NAME = 'NoorAlhuda-v1.0.2'; // تم تحديث الإصدار
+        const CACHE_NAME = 'NoorAlhuda-v1.0.2'; 
         const urlsToCache = [
             '/',
             '/index.html',
             'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-            // يمكن إضافة أيقونات الخطوط هنا إذا واجهت مشكلة في التحميل
         ];
 
         self.addEventListener('install', event => {
@@ -369,17 +368,28 @@
             getPrayerTimes();
         });
 
+        // 🚀 دالة nav(id) المحدثة لإغلاق القائمة بعد النقر
         function nav(id) {
             document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            
             const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.getAttribute('onclick').includes(id));
             if(btn) btn.classList.add('active');
-            if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+            
+            // ** الكود المضاف لإغلاق القائمة على الهواتف **
+            const sidebar = document.getElementById('sidebar');
+            // تحقق من أن القائمة مفتوحة وأن الجهاز هو هاتف (عرض الشاشة صغير)
+            if(sidebar.classList.contains('open') && window.innerWidth <= 768) {
+                sidebar.classList.remove('open');
+                document.body.style.overflow = 'auto'; // إعادة تفعيل التمرير
+            }
+            // ** نهاية الكود المضاف **
+            
             stopAutoScroll();
         }
         
-        // 🚀 الحل لمشكلة التداخل: تم إضافة إيقاف التمرير عند فتح القائمة 
+        // دالة تبديل القائمة (للزر الخارجي)
         function toggleSidebar() { 
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('open'); 
@@ -417,7 +427,6 @@
                 if(num != 1 && num != 9) html += `<div style="text-align:center; margin-bottom:20px;">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>`;
                 
                 surah.ayahs.forEach(ayah => {
-                    // تم التعامل مع علامات الاقتباس (Single/Double Quotes) لتجنب أخطاء JavaScript
                     const escapedText = ayah.text.replace(/'/g, "\\'").replace(/"/g, '\\"');
                     html += `<span class="ayah-span" onclick="showTafsir(${num}, ${ayah.numberInSurah}, '${escapedText}')">
                         ${ayah.text} <span class="ayah-number">(${ayah.numberInSurah})</span>
@@ -427,7 +436,6 @@
             } catch(e) { div.innerHTML = 'فشل التحميل'; }
         }
 
-        // 🚀 الإصلاح: دالة showTafsir المحدثة (تستخدم رقم الآية بدلاً من النص)
         async function showTafsir(surahNum, ayahNum, ayahText) {
             const modal = document.getElementById('tafsirModal');
             document.getElementById('tafsirTitle').innerText = `تفسير الآية ${ayahNum}`;
