@@ -20,7 +20,13 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
-        body { font-family: 'Cairo', sans-serif; background-color: var(--darker-bg); color: var(--text-color); overflow-x: hidden; }
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background-color: var(--darker-bg); 
+            color: var(--text-color); 
+            /* ** الحل النهائي للمشكلة: منع التمرير الأفقي ** */
+            overflow-x: hidden; 
+        }
 
         /* --- Scrollbar --- */
         ::-webkit-scrollbar { width: 8px; }
@@ -68,7 +74,6 @@
             transition: 0.2s; 
             padding: 2px 5px; 
             border-radius: 5px;
-            /* ** حل مشكلة تحديد النص ** */
             user-select: none; 
             -webkit-user-select: none; 
             -moz-user-select: none; 
@@ -139,7 +144,7 @@
         .btn-fb { background: #1877F2; }
         .btn-tg { background: #0088cc; }
 
-        /* --- Responsive FIX for Sidebar Overlap --- */
+        /* --- Responsive FIX for Sidebar Overlap and Position --- */
         .mobile-toggle { 
             display: none; 
             position: fixed; 
@@ -154,17 +159,19 @@
         }
         
         @media (max-width: 768px) {
-            /* ** الحل: تحريك القائمة خارج الشاشة وإعادتها عند الفتح ** */
+            /* ** القائمة الجانبية (Sidebar) ** */
             aside { 
+                /* إرسال القائمة بالكامل خارج الشاشة لليمين */
                 transform: translateX(100%); 
                 width: 260px; 
-                box-shadow: 0 0 20px rgba(0,0,0,0.8); /* إضافة ظل لإحساس التغطية */
+                box-shadow: 0 0 20px rgba(0,0,0,0.8); 
             }
             aside.open { 
-                transform: translateX(0); /* عند الفتح تعود لموقعها */
+                /* سحبها للداخل عند الفتح */
+                transform: translateX(0); 
             }
             main { 
-                /* إزالة الهامش الأيمن في وضع الهاتف */
+                /* إلغاء هامش سطح المكتب */
                 margin-right: 0; 
                 padding: 15px; 
                 padding-top: 60px; 
@@ -368,7 +375,7 @@
             getPrayerTimes();
         });
 
-        // 🚀 دالة nav(id) المحدثة لإغلاق القائمة بعد النقر
+        // 🚀 دالة nav(id) المحدثة: للتنقل وإغلاق القائمة في وضع الهاتف
         function nav(id) {
             document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
@@ -377,14 +384,12 @@
             const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.getAttribute('onclick').includes(id));
             if(btn) btn.classList.add('active');
             
-            // ** الكود المضاف لإغلاق القائمة على الهواتف **
             const sidebar = document.getElementById('sidebar');
-            // تحقق من أن القائمة مفتوحة وأن الجهاز هو هاتف (عرض الشاشة صغير)
+            // إغلاق القائمة إذا كانت مفتوحة (وهذا يحدث فقط في وضع الهاتف)
             if(sidebar.classList.contains('open') && window.innerWidth <= 768) {
                 sidebar.classList.remove('open');
-                document.body.style.overflow = 'auto'; // إعادة تفعيل التمرير
+                document.body.style.overflow = 'auto'; // إعادة تفعيل التمرير العمودي
             }
-            // ** نهاية الكود المضاف **
             
             stopAutoScroll();
         }
@@ -394,7 +399,7 @@
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('open'); 
 
-            // منع التمرير على المحتوى عندما تكون القائمة مفتوحة
+            // منع التمرير العمودي على المحتوى عندما تكون القائمة مفتوحة
             if(sidebar.classList.contains('open')) {
                 document.body.style.overflow = 'hidden'; 
             } else {
@@ -411,244 +416,4 @@
                 const sel = document.getElementById('surahSelectRead');
                 sel.innerHTML = '<option value="">اختر السورة...</option>';
                 allSurahs.forEach(s => sel.innerHTML += `<option value="${s.number}">${s.number}. ${s.name}</option>`);
-            } catch(e) { console.error('Error fetching surahs'); }
-        }
-
-        async function loadSurahText(num) {
-            if(!num) return;
-            const div = document.getElementById('quran-content');
-            div.innerHTML = 'جاري التحميل...';
-            try {
-                const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}`);
-                const data = await res.json();
-                const surah = data.data;
-                
-                let html = `<h3 style="text-align:center; margin-bottom:20px;">${surah.name}</h3>`;
-                if(num != 1 && num != 9) html += `<div style="text-align:center; margin-bottom:20px;">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>`;
-                
-                surah.ayahs.forEach(ayah => {
-                    const escapedText = ayah.text.replace(/'/g, "\\'").replace(/"/g, '\\"');
-                    html += `<span class="ayah-span" onclick="showTafsir(${num}, ${ayah.numberInSurah}, '${escapedText}')">
-                        ${ayah.text} <span class="ayah-number">(${ayah.numberInSurah})</span>
-                    </span>`;
-                });
-                div.innerHTML = html;
-            } catch(e) { div.innerHTML = 'فشل التحميل'; }
-        }
-
-        async function showTafsir(surahNum, ayahNum, ayahText) {
-            const modal = document.getElementById('tafsirModal');
-            document.getElementById('tafsirTitle').innerText = `تفسير الآية ${ayahNum}`;
-            document.getElementById('tafsirText').innerHTML = 'جاري جلب التفسير...';
-            modal.style.display = 'flex';
-
-            try {
-                const res = await fetch(`https://quranenc.com/api/v1/translation/sura/arabic_moyassar/${surahNum}`);
-                const data = await res.json();
-                
-                if(data && data.result) {
-                    const ayahData = data.result.find(a => parseInt(a.aya) === ayahNum);
-                    
-                    if(ayahData) {
-                        document.getElementById('tafsirText').innerHTML = `
-                            <div style="color:#d4af37; margin-bottom:10px; font-style: italic; border-bottom: 1px solid #444; padding-bottom: 10px;">
-                                <i class="fas fa-quote-right"></i> ${ayahText} <i class="fas fa-quote-left"></i>
-                            </div>
-                            <div style="text-align: right; direction: rtl;">${ayahData.translation}</div>
-                        `;
-                    } else {
-                        document.getElementById('tafsirText').innerText = 'لم يتم العثور على التفسير لهذه الآية في قاعدة البيانات.';
-                    }
-                } else {
-                    document.getElementById('tafsirText').innerText = 'خطأ في بنية البيانات المسترجعة من الخادم.';
-                }
-            } catch(e) {
-                document.getElementById('tafsirText').innerText = 'خطأ في الاتصال بالخادم لجلب التفسير. (قد تكون غير متصل بالإنترنت)';
-                console.error("Tafsir Error:", e);
-            }
-        }
-        function closeTafsir() { document.getElementById('tafsirModal').style.display = 'none'; }
-
-        // --- Auto Scroll ---
-        let autoScrollInterval;
-        function toggleAutoScroll() {
-            const btn = document.getElementById('scrollBtn');
-            if (autoScrollInterval) {
-                stopAutoScroll();
-            } else {
-                btn.classList.add('active');
-                btn.innerHTML = '<i class="fas fa-pause"></i>';
-                autoScrollInterval = setInterval(() => {
-                    window.scrollBy(0, 1);
-                     if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-                        stopAutoScroll();
-                    }
-                }, 40);
-            }
-        }
-
-        function stopAutoScroll() {
-            clearInterval(autoScrollInterval);
-            autoScrollInterval = null;
-            const btn = document.getElementById('scrollBtn');
-            if (btn) {
-                btn.classList.remove('active');
-                btn.innerHTML = '<i class="fas fa-arrow-down"></i>';
-            }
-        }
-
-        // --- 2. الصوت ---
-        async function fetchReciters() {
-            try {
-                const res = await fetch('https://www.mp3quran.net/api/v3/reciters?language=ar');
-                const data = await res.json();
-                recitersList = data.reciters.sort((a,b) => a.name.localeCompare(b.name));
-                const sel = document.getElementById('reciterSelect');
-                sel.innerHTML = '<option value="">اختر القارئ...</option>';
-                recitersList.forEach(r => sel.innerHTML += `<option value="${r.id}">${r.name}</option>`);
-            } catch(e) {}
-        }
-        function updateReciterSurahs() {
-            const rid = document.getElementById('reciterSelect').value;
-            const reciter = recitersList.find(r => r.id == rid);
-            const sel = document.getElementById('surahSelectAudio');
-            sel.innerHTML = '<option value="">اختر السورة...</option>';
-            if(reciter) {
-                reciter.moshaf[0].surah_list.split(',').forEach(s => {
-                    const sName = allSurahs.find(x => x.number == s)?.name || s;
-                    sel.innerHTML += `<option value="${s}">${s}. ${sName}</option>`;
-                });
-            }
-        }
-        function playAudio() {
-            const rid = document.getElementById('reciterSelect').value;
-            const sid = document.getElementById('surahSelectAudio').value;
-            if(!rid || !sid) return alert('اختر القارئ والسورة');
-            const reciter = recitersList.find(r => r.id == rid);
-            const server = reciter.moshaf[0].server;
-            const pad = sid.toString().padStart(3,'0');
-            const aud = document.getElementById('audioPlayer');
-            aud.src = `${server}${pad}.mp3`;
-            aud.play();
-        }
-
-        // --- 3. الأذكار الشاملة (قاعدة بيانات داخلية - متاحة أوف لاين) ---
-        const adhkarData = {
-            "الصباح": [
-                {t: "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ لاَ إلهَ إِلاَّ اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ. رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَذَا الْيَوْمِ وَخَيْرَ مَا بَعْدَهُ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَذَا الْيَوْمِ وَشَرِّ مَا بَعْدَهُ، رَبِّ أَعُوذُ بِكَ مِنَ الْكَسَلِ وَسُوءِ الْكِبَرِ، رَبِّ أَعُوذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ.", c: 1},
-                {t: "اللَّهُمَّ مَا أَصْبَحَ بِي مِنْ نِعْمَةٍ أَوْ بِأَحَدٍ مِنْ خَلْقِكَ فَمِنْكَ وَحْدَكَ لاَ شَرِيكَ لَكَ، فَلَكَ الْحَمْدُ وَلَكَ الشُّكْرُ.", c: 1},
-                {t: "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.", c: 3},
-                {t: "سُبْحَانَ اللهِ وَبِحَمْدِهِ", c: 100},
-                {t: "اللَّهُمَّ عافني في بدني، اللَّهُمَّ عافني في سمعي، اللَّهُمَّ عافني في بصري، لا إله إلا أنت.", c: 3}
-            ],
-            "المساء": [
-                {t: "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ لاَ إِلهَ إِلاَّ اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ... (ويكمل مثل دعاء الصباح)", c: 1},
-                {t: "اللَّهُمَّ بِكَ أَمْسَيْنَا وَبِكَ أَصْبَحْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ الْمَصِيرُ.", c: 1},
-                {t: "أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ", c: 3},
-                {t: "سيد الاستغفار: اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ خَلَقْتَنِي وَأَنَا عَبْدُكَ...", c: 1}
-            ],
-            "الصلاة": [
-                {t: "أَسْتَغْفِرُ اللَّهَ (ثَلاَثاً). اللَّهُمَّ أَنْتَ السَّلاَمُ، وَمِنْكَ السَّلاَمُ، تَبَارَكْتَ يَا ذَا الْجَلاَلِ وَالإِكْرَامِ.", c: 1},
-                {t: "اللهم أَعِنِّي على ذِكْرِكَ، وشُكْرِكَ، وحُسْنِ عبادتك. ", c: 1},
-                {t: "سبحان الله (33)، الحمد لله (33)، الله أكبر (33)، وتمام المئة: لا إله إلا الله وحده لا شريك له... ", c: 33}
-            ],
-            "النوم": [
-                {t: "بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ.", c: 1},
-                {t: "يجمع كفيه ثم ينفث فيهما ويقرأ: قل هو الله أحد، وقل أعوذ برب الفلق، وقل أعوذ برب الناس (3 مرات).", c: 3},
-                {t: "اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ، وَفَوَّضْتُ أَمْرِي إِلَيْكَ، وَأَلْجَأْتُ ظَهْرِي إِلَيْكَ...", c: 1}
-            ],
-            "المسجد": [
-                {t: "إذا دخل أحدكم المسجد فليقل: اللهم افتح لي أبواب رحمتك.", c: "عند الدخول"},
-                {t: "إذا خرج فليقل: اللهم إني أسألك من فضلك.", c: "عند الخروج"}
-            ]
-        };
-
-        function loadAdhkarData() {
-            const tabs = document.getElementById('adhkarTabs');
-            const list = document.getElementById('adhkarList');
-            tabs.innerHTML = '';
-            
-            Object.keys(adhkarData).forEach((key, index) => {
-                const btn = document.createElement('button');
-                btn.innerText = `أذكار ${key}`;
-                if(index === 0) btn.classList.add('active');
-                btn.onclick = () => {
-                    document.querySelectorAll('.adhkar-tabs button').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    renderAdhkarList(key);
-                };
-                tabs.appendChild(btn);
-            });
-            renderAdhkarList("الصباح");
-        }
-
-        function renderAdhkarList(category) {
-            const list = document.getElementById('adhkarList');
-            list.innerHTML = '';
-            adhkarData[category].forEach(d => {
-                list.innerHTML += `
-                    <div class="adhkar-item">
-                        <div class="adhkar-text">${d.t}</div>
-                        <div class="adhkar-meta"><span>التكرار: ${d.c}</span> <i class="fas fa-check-circle"></i></div>
-                    </div>
-                `;
-            });
-        }
-
-        // --- 4. الأحاديث (API) ---
-        async function fetchHadiths() {
-            const container = document.getElementById('hadithList');
-            try {
-                const res = await fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-nawawi.min.json');
-                const data = await res.json();
-                
-                let html = '';
-                data.hadiths.forEach(h => {
-                    html += `
-                        <div class="hadith-card">
-                            <h4 style="color:var(--main-gold); margin-bottom:10px;">حديث رقم ${h.hadithnumber}</h4>
-                            <p style="font-size:1.1rem; line-height:1.7;">${h.text}</p>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } catch(e) {
-                container.innerHTML = 'فشل تحميل الأحاديث. (قد تكون غير متصل بالإنترنت)';
-            }
-        }
-
-        // --- 5. المواقيت ---
-        function getPrayerTimes() {
-            if(navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async p => {
-                    try {
-                        const res = await fetch(`https://api.aladhan.com/v1/timings/${Math.floor(Date.now()/1000)}?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&method=5`);
-                        const d = await res.json();
-                        const t = d.data.timings;
-                        const map = {Fajr:'الفجر',Dhuhr:'الظهر',Asr:'العصر',Maghrib:'المغرب',Isha:'العشاء'};
-                        let h = '<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px;">';
-                        for(let k in map) {
-                            h += `<div style="background:#333; padding:15px; border-radius:10px; border-bottom:3px solid var(--main-gold);">
-                                <div style="color:var(--main-gold); font-weight:bold;">${map[k]}</div>
-                                <div style="font-size:1.2rem; margin-top:5px;">${t[k]}</div>
-                            </div>`;
-                        }
-                        h += '</div>';
-                        document.getElementById('prayer-display').innerHTML = h;
-                    } catch(e) { document.getElementById('prayer-display').innerText = 'خطأ في جلب المواقيت. (قد تكون غير متصل بالإنترنت)'; }
-                }, () => document.getElementById('prayer-display').innerText = 'يرجى تفعيل الموقع (GPS) لحساب المواقيت');
-            }
-        }
-
-        // --- 6. السبحة ---
-        let count = 0;
-        function countTasbeeh() {
-            count++;
-            document.getElementById('tasbeehCounter').innerText = count;
-            if(navigator.vibrate) navigator.vibrate(30);
-        }
-        function resetTasbeeh() { count = 0; document.getElementById('tasbeehCounter').innerText = 0; }
-
-    </script>
-</body>
-</html>
+            } catch(e) { console.error('Error fetching su
