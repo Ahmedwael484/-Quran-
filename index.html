@@ -68,7 +68,7 @@
             transition: 0.2s; 
             padding: 2px 5px; 
             border-radius: 5px;
-            /* ** الحل لمشكلة تحديد النص ** */
+            /* ** حل مشكلة تحديد النص ** */
             user-select: none; 
             -webkit-user-select: none; 
             -moz-user-select: none; 
@@ -139,14 +139,39 @@
         .btn-fb { background: #1877F2; }
         .btn-tg { background: #0088cc; }
 
-        /* --- Responsive --- */
-        .mobile-toggle { display: none; position: fixed; top: 15px; right: 15px; background: var(--main-gold); padding: 10px; border-radius: 5px; z-index: 1100; cursor: pointer; border: none; }
+        /* --- Responsive FIX for Sidebar Overlap --- */
+        .mobile-toggle { 
+            display: none; 
+            position: fixed; 
+            top: 15px; 
+            right: 15px; 
+            background: var(--main-gold); 
+            padding: 10px; 
+            border-radius: 5px; 
+            z-index: 1100; 
+            cursor: pointer; 
+            border: none; 
+        }
         
         @media (max-width: 768px) {
-            aside { transform: translateX(100%); width: 260px; }
-            aside.open { transform: translateX(0); }
-            main { margin-right: 0; padding: 15px; padding-top: 60px; }
-            .mobile-toggle { display: block; }
+            /* ** الحل: تحريك القائمة خارج الشاشة وإعادتها عند الفتح ** */
+            aside { 
+                transform: translateX(100%); 
+                width: 260px; 
+                box-shadow: 0 0 20px rgba(0,0,0,0.8); /* إضافة ظل لإحساس التغطية */
+            }
+            aside.open { 
+                transform: translateX(0); /* عند الفتح تعود لموقعها */
+            }
+            main { 
+                /* إزالة الهامش الأيمن في وضع الهاتف */
+                margin-right: 0; 
+                padding: 15px; 
+                padding-top: 60px; 
+            }
+            .mobile-toggle { 
+                display: block; 
+            }
         }
     </style>
 </head>
@@ -264,30 +289,26 @@
     </div>
 
     <script type="text/worker" id="service-worker-code">
-        const CACHE_NAME = 'NoorAlhuda-v1.0.1'; // يجب تغيير هذا الرقم عند أي تحديث
+        const CACHE_NAME = 'NoorAlhuda-v1.0.2'; // تم تحديث الإصدار
         const urlsToCache = [
             '/',
             '/index.html',
-            // ملف manifest تم تضمينه في الرأس، لكن يجب تخزين الأيقونات (تتطلب ملفات فعلية)
-            // 'icon-192.png', 
-            // 'icon-512.png',
             'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-            // ملاحظة: الخطوط الخارجية قد يكون تخزينها أصعب
-            // 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;700&family=Reem+Kufi:wght@700&display=swap'
+            // يمكن إضافة أيقونات الخطوط هنا إذا واجهت مشكلة في التحميل
         ];
 
-        // حدث التثبيت
         self.addEventListener('install', event => {
             event.waitUntil(
                 caches.open(CACHE_NAME)
                     .then(cache => {
                         console.log('Opened cache and pre-caching assets');
-                        return cache.addAll(urlsToCache);
+                        return cache.addAll(urlsToCache).catch(err => {
+                            console.error('Failed to add some URLs to cache:', err);
+                        });
                     })
             );
         });
 
-        // حدث الجلب
         self.addEventListener('fetch', event => {
             event.respondWith(
                 caches.match(event.request)
@@ -302,7 +323,6 @@
             );
         });
 
-        // حدث التفعيل
         self.addEventListener('activate', event => {
             const cacheWhitelist = [CACHE_NAME];
             event.waitUntil(
@@ -320,22 +340,22 @@
         });
     </script>
     <script>
-        // دالة لتسجيل الـ Service Worker من ملف خارجي
+        // دالة لتسجيل الـ Service Worker
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
-                // يجب أن يشير هذا إلى ملف SW.js الفعلي
+                // يجب أن يشير هذا إلى ملف SW.js الفعلي بعد فصل الكود
                 navigator.serviceWorker.register('/sw.js').then(registration => {
                     console.log('Service Worker registered successfully.');
                 }).catch(err => {
-                    console.log('Service Worker registration failed:', err);
+                    console.log('Service Worker registration failed. Make sure sw.js exists.', err);
                 });
             } else {
                 console.log('Service Workers are not supported in this browser.');
             }
         }
         
-        // قم باستدعاء هذه الدالة عند تحميل الصفحة
         window.addEventListener('load', registerServiceWorker);
+
 
         // --- تهيئة البيانات ---
         let allSurahs = [];
@@ -358,7 +378,19 @@
             if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
             stopAutoScroll();
         }
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+        
+        // 🚀 الحل لمشكلة التداخل: تم إضافة إيقاف التمرير عند فتح القائمة 
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open'); 
+
+            // منع التمرير على المحتوى عندما تكون القائمة مفتوحة
+            if(sidebar.classList.contains('open')) {
+                document.body.style.overflow = 'hidden'; 
+            } else {
+                document.body.style.overflow = 'auto';
+            }
+        }
 
         // --- 1. القرآن والتفسير (تم الإصلاح) ---
         async function fetchSurahs() {
@@ -385,6 +417,7 @@
                 if(num != 1 && num != 9) html += `<div style="text-align:center; margin-bottom:20px;">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>`;
                 
                 surah.ayahs.forEach(ayah => {
+                    // تم التعامل مع علامات الاقتباس (Single/Double Quotes) لتجنب أخطاء JavaScript
                     const escapedText = ayah.text.replace(/'/g, "\\'").replace(/"/g, '\\"');
                     html += `<span class="ayah-span" onclick="showTafsir(${num}, ${ayah.numberInSurah}, '${escapedText}')">
                         ${ayah.text} <span class="ayah-number">(${ayah.numberInSurah})</span>
@@ -394,7 +427,7 @@
             } catch(e) { div.innerHTML = 'فشل التحميل'; }
         }
 
-        // 🚀 الإصلاح: دالة showTafsir المحدثة
+        // 🚀 الإصلاح: دالة showTafsir المحدثة (تستخدم رقم الآية بدلاً من النص)
         async function showTafsir(surahNum, ayahNum, ayahText) {
             const modal = document.getElementById('tafsirModal');
             document.getElementById('tafsirTitle').innerText = `تفسير الآية ${ayahNum}`;
